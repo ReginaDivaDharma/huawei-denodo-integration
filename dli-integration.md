@@ -75,6 +75,8 @@ Before connecting, ensure the necessary permissions are active. Navigate to DLI 
 ---
 
 ## 4. Final Routing (The "Tricky" Part)
+For official documentation from Huawei Cloud You can see here
+🍀https://support.huaweicloud.com/eu/bestpractice-dli/dli_05_0061.html
 
 Even with peering active, the queue needs specific instructions to reach the internet via the NAT Gateway.
 
@@ -96,8 +98,6 @@ Go back to the **Data Lake Insight Dashboard** after configuring the SNAT rule:
 
 1. Click on **Manage Route**.
 2. Click **Add a Custom Route** and enter the **Public IP address of your Denodo instance**. This tells the queue exactly where to send traffic.
-
-![Custom Route Setup](https://github.com/user-attachments/assets/4ae98185-a528-4f63-88da-9d1c7eef3bd5)
 
 ---
 
