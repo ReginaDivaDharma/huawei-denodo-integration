@@ -1,8 +1,4 @@
-# Data Warehouse Service Integration Manual 
-**WARNING** : Before you waste your time following my footsteps, please do note that **integration of denodo and DWS is not possible**, due to the SQL commands not working. The conclusion that we've made is because it doesn't recognize Denodo's Driver.
-Which meant the only way for us to work with denodo is if we can upload Denodo JDBC Driver. If you are still curious as to what i have done you can refer to below steps.
-
-## Data Preparation 
+# Data Preparation 
 Within this tutorial i chose to deploy Relational Database (PostgreSQL) on huawei clouds and ingesting some data into the database first. But to be honest you can just put any data , and you dont have to deploy an RDS instance if you want to try connecting to denodo. You can skip this part if you already did upload some data in your own denodo :D
 
 1. Make a Relational Data Base Instance (PostgreSQL / MySQL)
