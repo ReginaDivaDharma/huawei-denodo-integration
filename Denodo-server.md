@@ -25,6 +25,6 @@ Since I'm using **Huawei Cloud**, you can see the steps I took below:
 ## Conclusion
 In the end, just make sure that your Denodo instance is accessible, whether you're using a public IP or other sources. The **Data Lake Insight (DLI)** will specifically need access to **port 9999**! 😆
 
-Once you've gotten yourself the data (base view) in denodo, and made sure that denodo is accessible to the public, we can then move on to our integration with DLI 🤓
+Once you've gotten yourself the [data (base view) in denodo](data-preparation.md) , and made sure that denodo is accessible to the public, we can then move on to our integration with DLI 🤓
 
 Please refer to this page [DLI Integration](dli-integration.md)
