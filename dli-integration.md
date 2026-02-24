@@ -267,7 +267,8 @@ You're almost there! Now let's submit the Spark job to pull data from Denodo.
 
    ![Spark Job Config](https://github.com/user-attachments/assets/6e8b9e9c-abd2-4806-8ff7-eca3ccdc8735)
 
-   Note: For some reason when i re-tested with the fruits table, the driver only works if you put it here. **Do NOT use the drop down**. Im not sure why there's an error if you use that method.
+Note: For some reason when i re-tested with the fruits table, the driver only works if you put it here. **Do NOT use the drop down**. Im not sure why there's an error if you use that method.
+
    <img width="606" height="472" alt="image" src="https://github.com/user-attachments/assets/afdcafc6-bd13-49e4-9762-955981150b7c" />
 
 
