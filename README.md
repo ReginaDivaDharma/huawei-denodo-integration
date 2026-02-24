@@ -2,14 +2,14 @@
 
 > A summary of integration methods between **Denodo** and **Huawei Cloud's Big Data Platform**.
 > 
-> ⚠️ *This documentation was written in early 2026 — some details may have changed.*
+> ⚠️ *This documentation was written in early 2026 some details may have changed.*
 
 ---
 
 ## 📖 Background
 
-**Denodo** is a data virtualization tool that acts as a unified layer over many data sources, whether on-premises or cloud-based, across a wide range of vendors. Importantly, Denodo only acts as a virtualization layer — **it does not store any data**.
-
+**Denodo** is a data virtualization tool that acts as a unified layer over many data sources, whether on-premises or cloud-based, across a wide range of vendors. Importantly, Denodo only acts as a virtualization layer **it does not store any data**. So the only way we can connect to it is by using the JDBC protocol.
+ 
 ---
 
 ## ❓ Problem
@@ -28,15 +28,7 @@ Two integration approaches were explored:
 | Data Warehouse Service (DWS) | ⚠️ See notes | [View Guide](dws-integration.md) |
 
 The general flow is:
-1. Create a table view in Denodo.
-2. Host Denodo with a **public IP**.
-3. Connect Huawei Cloud's Big Data Platform to it via JDBC.
-
----
-
-## 📚 Documentation
-
-- [Denodo Server Setup](Denodo-server.md)
-- [Data Preparation](data-preparation.md)
-- [DLI Integration](dli-integration.md)
-- [DWS Integration](dws-integration.md)
+1. [Prepare your data](data-preparation.md)
+2. [Prepare your denodo](Denodo-server.md)
+3. [DLI Integration](dli-integration.md)
+4. [DWS Integration (This is not possible)](dws-integration.md)
