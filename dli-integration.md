@@ -277,6 +277,8 @@ Note: For some reason when i re-tested with the fruits table, the driver only wo
 ## 11. See the Result!
 
 Once the job completes successfully, your Denodo data will be available in DLI. Check the job logs to verify the output. 🎉
+You can check this by clicking on your spark job > More drop down > select driver log then scroll down if you can see your result. 
+
 <img width="463" height="176" alt="image" src="https://github.com/user-attachments/assets/a916e50a-1b3b-464c-af4b-fc60a89de79c" />
 
 Yay! we got the fruits table!
