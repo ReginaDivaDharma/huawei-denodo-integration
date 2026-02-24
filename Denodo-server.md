@@ -1,15 +1,26 @@
 # Denodo Server Set Up
-I suggest that doing an integration with denodo , you should have a public IP that our DLI can access. Which is why i decided to put denodo on top of a VM so they can have a public IP.
+
+I suggest that when doing an integration with Denodo, you should have a public IP that our DLI can access. This is why I decided to put Denodo on top of a VM so it can have a public IP.
+
+---
 
 ## Setting up a VM
-Since im using Huawei Cloud you can see what i did below 
-1. Purchase an ECS with EIP
-Any ECS would do , and since huawei cloud does not support windows OS (it needs to be whitelisted) i used a simple linux os. Dont forget to bind this ECS with a public IP so you can access the internet, and vice versa
-2. Denodo Setup
-After purchaing the ECS i usually like to install a visualization tool for VNC so im not just looking at.. lines. You can treat the ECS like your own personal laptop after this step, just go to a pre-existing browser and download denodo. Denodo itself supprts 3 OS if im not mistaken, 
-windows, linux, and MacOS. Follow the instruction to install it.
-3. Security Group
-In your security group setting, make sure that your ECS allows inbound for port 9999 , since it is the port that denodo is using. And make sure that you can reach your IP using the IP:Port telnet command, if this can run, then you're doing great.
+Since I'm using **Huawei Cloud**, you can see the steps I took below:
+
+1. **Purchase an ECS with EIP**
+   - Any ECS would do. Since Huawei Cloud does not support Windows OS by default (it needs to be whitelisted), I used a simple **Linux OS**. 
+   - Don't forget to bind this ECS with a **Public IP (EIP)** so you can access the internet, and vice versa.
+
+2. **Denodo Setup**
+   - After purchasing the ECS, I usually like to install a visualization tool (VNC) so I'm not just looking at command lines. 
+   - You can treat the ECS like your own personal laptop after this step; just go to a browser and download Denodo. 
+   - Denodo supports three operating systems: **Windows, Linux, and MacOS**. Follow the instructions provided to install it.
+
+3. **Security Group**
+   - In your Security Group settings, make sure your ECS allows **inbound traffic for port 9999**, as this is the port Denodo uses. 
+   - Verify connectivity by running a telnet command: `telnet [Your-IP] 9999`. If it connects, you're doing great!
+
+---
 
 ## Conclusion
-In the end, just make sure that your denodo is accessible whether you're using a public IP or other sources. The Data Lake Insight would need to have access to the port 9999 especially.
+In the end, just make sure that your Denodo instance is accessible, whether you're using a public IP or other sources. The **Data Lake Insight (DLI)** will specifically need access to **port 9999**! 😆
