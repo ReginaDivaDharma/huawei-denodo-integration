@@ -33,7 +33,7 @@ After you have your data connection , you should now create a base view. This is
 Before we move on to the next step, i also suggest that you should try to query your data from the base view you just created, just to check if the data is actually there.
 <img width="991" height="582" alt="image" src="https://github.com/user-attachments/assets/1564e672-00be-4d57-aaf9-a3dc3f4f3e8c" />
 
-**Congratulations you've successfully connected your data source to denodo and created a base view! :smiley:
+**Congratulations you've successfully connected your data source to denodo and created a base view!** :smiley:
 
 
 
