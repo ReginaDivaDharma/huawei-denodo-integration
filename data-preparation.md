@@ -60,3 +60,7 @@ Finalize the process by running a quick `SELECT` query in the Design Studio to e
 <img width="991" height="582" alt="Query Verification" src="https://github.com/user-attachments/assets/1564e672-00be-4d57-aaf9-a3dc3f4f3e8c" />
 
 **Congratulations! You have successfully connected your data source to Denodo and created your first Base View!** :smiley:
+To be honest you dont have to do this step at all , if you want to test integration you can upload from your local infrastructure to the denodo itself. The important thing is that we get the base view, which will be important for DLI! 
+
+Now once we've got ourselves the data, let's move on to setting up the denodo itself, because we need to make sure that it can be accessed by our DLI.
+Let's go to this page [Denodo Server Setup](Denodo-server.md)
