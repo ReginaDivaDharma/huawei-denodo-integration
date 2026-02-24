@@ -1,5 +1,5 @@
 # Denodo Server Set Up
-I suggest that doing an integration with denodo , you should have a public IP that our DLI can access. Which is why i decided to put DLI on top of a VM so they can have a public IP.
+I suggest that doing an integration with denodo , you should have a public IP that our DLI can access. Which is why i decided to put denodo on top of a VM so they can have a public IP.
 
 ## Setting up a VM
 Since im using Huawei Cloud you can see what i did below 
