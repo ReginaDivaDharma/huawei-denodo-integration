@@ -3,7 +3,7 @@
 Integrating **Denodo** with **Huawei Cloud** via **Data Lake Insight (DLI)** is currently the most effective method, as DLI supports custom drivers.
 
 > [!CAUTION]
-> **Prerequisite:** Ensure you have permissions to create an **Agency in IAM**. This is a common bottleneck — coordinate with your Master Account administrator before proceeding.
+> **Prerequisite:** Make sure you have permissions to create an **Agency in IAM**. Coordinate with your Master Account administrator before proceeding, or else you will waste alot of time 😿
 
 ---
 
