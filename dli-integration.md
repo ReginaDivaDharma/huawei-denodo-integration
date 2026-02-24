@@ -3,7 +3,7 @@
 Integrating **Denodo** with **Huawei Cloud** via **Data Lake Insight (DLI)** is currently the most effective method, as DLI supports custom drivers.
 
 > [!CAUTION]
-> **Prerequisite:** Make sure you have permissions to create an **Agency in IAM**. Coordinate with your Master Account administrator before proceeding, or else you will waste alot of time 😿
+> **Prerequisite:** Make sure you have permissions to create an **Agency in IAM**. Coordinate with your Master Account administrator before proceeding, or else you will waste alot of time 
 
 ---
 
@@ -66,7 +66,7 @@ Before connecting, ensure the necessary permissions are active. Navigate to DLI 
 
 ### Step B: Set Up VPC Peering
 
-1. Click on **Datasource Connection** — this is where you perform VPC peering from DLI to your VPC.
+1. Click on **Datasource Connection** this is where you perform VPC peering from DLI to your VPC.
 2. Input the information according to your **NAT Gateway VPC**.
 3. Ensure you select your **Resource Pool** in the form.
 
@@ -111,7 +111,7 @@ Test if the bridge is working:
 
 ![Connectivity Test](https://github.com/user-attachments/assets/bea764fd-cec1-4273-9ebf-ea8647f2c1d2)
 
-**Congrats — you've passed the networking stage! Now let's move on to the Spark job setup. 😃**
+**Congrats! you've passed the networking stage! Now let's move on to the Spark job setup. 😃**
 
 ---
 
