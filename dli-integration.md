@@ -19,7 +19,7 @@ Integrating **Denodo** with **Huawei Cloud** via **Data Lake Insight (DLI)** is 
 9. [Create an IAM Agency to Access OBS](#9-create-an-iam-agency-to-access-obs)
 10. [Submit the Spark Job](#10-submit-the-spark-job)
 11. [See the Result!](#11-see-the-result)
-12. [Pulling DLI Data into Denodo] 
+12. [Connecting a DLI Table in Denodo](#12-connecting-a-dli-table-in-denodo)
 
 ---
 
