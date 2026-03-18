@@ -330,6 +330,8 @@ Navigate to **Configuration** → **Advanced** → set the **Driver Class** as s
 
 ![Denodo Driver Class Configuration](https://github.com/user-attachments/assets/5a544a6f-f59e-4c5f-ac20-dd1c352adefe)
 
+If you want to see your table contents you need to go to your create base view and pick your database
+you are then able to pick your table and select it to make a base view out of it! thanks for reading this far!
 ---
 
 Once everything is configured, test your connection to verify that Denodo can successfully reach your DLI table. Good luck! 
