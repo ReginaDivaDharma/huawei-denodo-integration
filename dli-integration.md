@@ -19,6 +19,7 @@ Integrating **Denodo** with **Huawei Cloud** via **Data Lake Insight (DLI)** is 
 9. [Create an IAM Agency to Access OBS](#9-create-an-iam-agency-to-access-obs)
 10. [Submit the Spark Job](#10-submit-the-spark-job)
 11. [See the Result!](#11-see-the-result)
+12. [Pulling DLI Data into Denodo] 
 
 ---
 
@@ -282,5 +283,56 @@ You can check this by clicking on your spark job > More drop down > select drive
 <img width="463" height="176" alt="image" src="https://github.com/user-attachments/assets/a916e50a-1b3b-464c-af4b-fc60a89de79c" />
 
 Yay! we got the fruits table!
+
+## 12. Connecting a DLI Table in Denodo
+
+Once you have your table in Data Lake Insight (DLI), you may want to bring it back into Denodo for further use. This tutorial walks you through exactly how to do that!
+
+---
+
+### A. Get Your AK/SK Credentials
+
+Before anything else, you'll need to retrieve your **Access Key (AK)** and **Secret Key (SK)** from your Huawei Cloud account. These credentials allow Denodo to authenticate and access your DLI table.
+
+---
+
+### B. Write Down Your DLI JDBC Endpoint
+
+Denodo connects to DLI via a **JDBC connection**. Use the template below to construct your endpoint:
+```
+jdbc:dli://dli.dli.{huawei-region-endpoint}/{project-id}?regionname={region-code};authenticationmode=aksk;databasename={databasename};queuename={queuename}
+```
+
+> 💡 **Tip:** Not sure which DLI endpoint to use? Check the full list of Huawei Cloud endpoints here:  
+> [https://console-intl.huaweicloud.com/apiexplorer/#/endpoint](https://console-intl.huaweicloud.com/apiexplorer/#/endpoint)
+
+---
+
+### C. Install the Custom DLI JDBC Driver in Denodo
+
+Once your endpoint is ready, you need to install the DLI JDBC driver into Denodo.
+
+**1. Download the driver**  
+Download the DLI JDBC driver file from the link provided *(still trying to make the download link lol)*.
+
+**2. Import the driver into Denodo**  
+Follow these steps inside Denodo:
+
+1. Go to **File** → **Extension Management**
+2. Click on **Library**
+3. Click the **Import** button
+4. Set the **Resource Type** to `JDBC_other`
+5. Give it a name of your choice
+6. Click **OK** and return to the **Connection** tab
+
+**3. Configure the driver class**  
+Navigate to **Configuration** → **Advanced** → set the **Driver Class** as shown in the screenshot below.
+
+![Denodo Driver Class Configuration](https://github.com/user-attachments/assets/5a544a6f-f59e-4c5f-ac20-dd1c352adefe)
+
+---
+
+Once everything is configured, test your connection to verify that Denodo can successfully reach your DLI table. Good luck! 
+
 
 **I hope that this guide can save you some time 😄, if you have any questions you can always email me at : regina.diva333@gmail.com**
