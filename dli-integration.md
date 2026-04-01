@@ -300,7 +300,12 @@ Before anything else, you'll need to retrieve your **Access Key (AK)** and **Sec
 
 Denodo connects to DLI via a **JDBC connection**. Use the template below to construct your endpoint:
 ```
-jdbc:dli://dli.dli.{huawei-region-endpoint}/{project-id}?regionname={region-code};authenticationmode=aksk;databasename={databasename};queuename={queuename}
+jdbc:dli://dli.{huawei-region-endpoint}/{project-id}?regionname={region-code};authenticationmode=aksk;databasename={databasename};queuename={queuename}
+```
+
+For Example 
+```
+jdbc:dli://dli.ap-southeast-4.myhuaweicloud.com/xxx?regionname=ap-southeast-4;authenticationmode=aksk;databasename=dbname;queuename=queue_name
 ```
 
 > 💡 **Tip:** Not sure which DLI endpoint to use? Check the full list of Huawei Cloud endpoints here:  
