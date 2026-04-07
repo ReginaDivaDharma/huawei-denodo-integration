@@ -19,7 +19,7 @@
 12. [Step 10 — Submit the Spark Job](#step-10--submit-the-spark-job)
 13. [Step 11 — See the Result!](#step-11--see-the-result)
 14. [Step 12 — Connecting a DLI Table Back into Denodo](#step-12--connecting-a-dli-table-back-into-denodo)
-15. [Limitations We Discovered](#limitations-we-discovered)
+15. [🚀 Modifying DLI Tables via Denodo (CRUD Guide)](#-modifying-dli-tables-via-denodo-crud-guide)
 
 ---
 
@@ -429,55 +429,94 @@ Go to **Configuration** → **Advanced** and set the **Driver Class** as shown:
 
 ---
 
-## Limitations We Discovered
+## 🚀 Step 13 — Modifying DLI Tables via Denodo (CRUD Guide)
 
-During this integration, we ran into some important limitations worth knowing upfront:
-
-### ❌ You Cannot UPDATE Data via Denodo VQL → DLI
-
-This is a **DLI platform limitation**, not a Denodo issue. Here's why:
-
-| Format | Supports UPDATE? | Reason |
-|---|---|---|
-| Parquet | ❌ | Immutable file format |
-| CSV | ❌ | Immutable file format |
-| ORC | ❌ | ACID not enabled by DLI |
-| ORC + `transactional=true` | ❌ | DLI's `luxorfs` can't manage transactions |
-| JSON | ❌ | Immutable file format |
-| Avro | ❌ | Immutable file format |
-| Hudi / Delta / Paimon | ❌ | Not supported by DLI at all |
-
-**The workaround:** Use `INSERT OVERWRITE` directly in the DLI SQL Editor to rewrite data with your changes applied.
-
-```sql
--- Example: "Update" Nasi Goreng's price to 40000
-INSERT OVERWRITE TABLE dummy_data.food
-SELECT
-    id,
-    name,
-    category,
-    CASE WHEN id = 1 THEN 40000.0 ELSE price END AS price,
-    city
-FROM dummy_data.food;
-```
-
-### ❌ Cannot Save Directly to DLI Hive Table from Spark JAR Jobs
-
-DLI Spark JAR jobs cannot connect to the Hive metastore without explicit activation by Huawei. You'll need to submit a support ticket to whitelist this feature.
-
-**Workaround:** Save processed data back to OBS as Parquet instead.
+If you don't want to switch between consoles, you can manage your data directly through Denodo. This section explains how to perform **CRUD** (Create, Read, Update, Delete) operations from Denodo back to Huawei Cloud DLI.
 
 ---
 
-## Quick Reference Card
+### 🛠️ The Prerequisites
 
-| Task | Where to Do It | Works? |
-|---|---|---|
-| Query data | Denodo VQL Shell | ✅ |
-| Read DLI tables | Denodo VQL Shell | ✅ |
-| INSERT new data | DLI SQL Editor | ✅ |
-| UPDATE existing data | DLI SQL Editor (`INSERT OVERWRITE`) | ✅ workaround |
-| UPDATE via Denodo VQL | Denodo VQL Shell | ❌ DLI limitation |
+To modify data, your DLI table must support **ACID transactions**.
+
+- **Required Format:** Use **Hudi** (highly recommended for DLI)
+- **The `_rt` Rule:** Hudi creates two table versions. Always use the **Real-Time (`_rt`)** table (e.g., `food_rt`) in Denodo to see your updates instantly.
+
+> 💡 **Pro Tip: "Lao Da" Bypass**  
+> DLI requires a partition filter to show data. To see the **entire table** at once, use:
+>
+> ```sql
+> WHERE your_partition_column != ''
+> ```
+>
+> Example:
+>
+> ```sql
+> WHERE city != ''
+> ```
+
+---
+
+### 1. Insertion (Create)
+
+Adding new data is as simple as a standard SQL query.
+
+**VQL Command:**
+
+```sql
+INSERT INTO bv_food_rt (id, name, category, price, city) 
+VALUES (3, 'Pisang Goreng', 'Snack', 20000.0, 'Jakarta');
+```
+
+**Verification:**  
+Checking both DLI and Denodo confirms the data is successfully ingested.
+
+![Insert Verification](https://github.com/user-attachments/assets/0b2a7dcc-9937-4b00-88fb-7689509b94c4)
+
+---
+
+### 2. Update
+
+When updating, always include the **Partition Key** (e.g., `city`) so DLI knows exactly where to look.
+
+**VQL Command:**
+
+```sql
+UPDATE bv_food_rt 
+SET price = 45000.0 
+WHERE id = 1 AND city = 'Jakarta';
+```
+
+**Verification:**  
+The price update is immediately reflected in the DLI console.
+
+![Update Verification](https://github.com/user-attachments/assets/29a1cfb1-a5aa-480b-a9f2-ae5af8d0024e)
+
+---
+
+### 3. Delete
+
+Removing a specific row also requires the **Partition Key** to satisfy DLI's safety rules.
+
+**VQL Command:**
+
+```sql
+DELETE FROM bv_food_rt 
+WHERE id = 10 AND city = 'Bali';
+```
+
+**Verification:**  
+After running the query, the row is permanently removed from the data lake.
+
+![Delete Verification](https://github.com/user-attachments/assets/b3cd1e2c-66a2-4a3b-a572-dc6affdcc4d4)
+
+---
+
+## ✅ Final Result
+
+The data in Denodo now perfectly aligns with your DLI table.
+
+![Final Result](https://github.com/user-attachments/assets/0dce9f13-2c84-4090-ae5b-1b4dd2f7f82e)
 
 ---
 
