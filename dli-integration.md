@@ -19,7 +19,7 @@
 12. [Step 10 — Submit the Spark Job](#step-10--submit-the-spark-job)
 13. [Step 11 — See the Result!](#step-11--see-the-result)
 14. [Step 12 — Connecting a DLI Table Back into Denodo](#step-12--connecting-a-dli-table-back-into-denodo)
-15. [🚀 Modifying DLI Tables via Denodo (CRUD Guide)](#-modifying-dli-tables-via-denodo-crud-guide)
+15. [🚀 Step 13 — Modifying DLI Tables via Denodo (CRUD Guide)](#-step-13--modifying-dli-tables-via-denodo-crud-guide)
 
 ---
 
