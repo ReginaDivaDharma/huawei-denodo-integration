@@ -1,345 +1,486 @@
-# Data Lake Insight (DLI) Integration Guide
+# 🌊 Connecting Denodo to Huawei Cloud DLI — A Beginner's Guide
 
-Integrating **Denodo** with **Huawei Cloud** via **Data Lake Insight (DLI)** is currently the most effective method, as DLI supports custom drivers.
-
-> [!CAUTION]
-> **Prerequisite:** Make sure you have permissions to create an **Agency in IAM**. Coordinate with your Master Account administrator before proceeding, or else you will waste alot of time 
+> This guide walks you through connecting **Denodo** (a data virtualization tool) to **Huawei Cloud Data Lake Insight (DLI)** step by step. No prior experience needed — every term is explained along the way!
 
 ---
 
-## Table of Contents
-1. [Networking Setup](#1-networking-setup)
-2. [Setting Up DLI Resources](#2-setting-up-dli-resources)
-3. [VPC Peering & Authorization](#3-vpc-peering--authorization)
-4. [Final Routing (The "Tricky" Part)](#4-final-routing-the-tricky-part)
-5. [Verify Connectivity](#5-verify-connectivity)
-6. [Create an OBS Bucket](#6-create-an-obs-bucket)
-7. [Upload the Denodo JDBC Driver](#7-upload-the-denodo-jdbc-driver)
-8. [Write a PySpark Job to Query Denodo](#8-write-a-pyspark-job-to-query-denodo)
-9. [Create an IAM Agency to Access OBS](#9-create-an-iam-agency-to-access-obs)
-10. [Submit the Spark Job](#10-submit-the-spark-job)
-11. [See the Result!](#11-see-the-result)
-12. [Connecting a DLI Table in Denodo](#12-connecting-a-dli-table-in-denodo)
+## 📋 Table of Contents
+1. [What Are We Trying to Do?](#what-are-we-trying-to-do)
+2. [Before You Start](#before-you-start)
+3. [Step 1 — Networking Setup](#step-1--networking-setup)
+4. [Step 2 — Setting Up DLI Resources](#step-2--setting-up-dli-resources)
+5. [Step 3 — VPC Peering & Authorization](#step-3--vpc-peering--authorization)
+6. [Step 4 — Final Routing (The Tricky Part)](#step-4--final-routing-the-tricky-part)
+7. [Step 5 — Verify Connectivity](#step-5--verify-connectivity)
+8. [Step 6 — Create an OBS Bucket](#step-6--create-an-obs-bucket)
+9. [Step 7 — Upload the Denodo JDBC Driver](#step-7--upload-the-denodo-jdbc-driver)
+10. [Step 8 — Write a PySpark Job to Query Denodo](#step-8--write-a-pyspark-job-to-query-denodo)
+11. [Step 9 — Create an IAM Agency to Access OBS](#step-9--create-an-iam-agency-to-access-obs)
+12. [Step 10 — Submit the Spark Job](#step-10--submit-the-spark-job)
+13. [Step 11 — See the Result!](#step-11--see-the-result)
+14. [Step 12 — Connecting a DLI Table Back into Denodo](#step-12--connecting-a-dli-table-back-into-denodo)
+15. [Limitations We Discovered](#limitations-we-discovered)
 
 ---
 
-## 1. Networking Setup
+## What Are We Trying to Do?
 
-DLI is deployed outside of your VPC by default. To allow DLI to reach the public internet (and Denodo), you must configure a **NAT Gateway**.
+Before jumping in, here's a plain-English explanation of the goal:
 
-### Create the VPC Environment
+```
+┌─────────────┐          ┌─────────────┐          ┌─────────────┐
+│   DENODO    │ ◀──────▶ │  Huawei DLI │ ◀──────▶ │  OBS        │
+│ (Your query │          │ (Processing │          │ (Your data  │
+│  interface) │          │   engine)   │          │  storage)   │
+└─────────────┘          └─────────────┘          └─────────────┘
+```
 
-- **Enterprise Project:** Create an Enterprise Project first to keep your resources organized and easily trackable.
-- **VPC:** Create a standard VPC with a name of your choice.
-- **NAT Gateway:**
-  1. Purchase a NAT Gateway within your VPC.
-  2. Bind an **EIP** (Elastic IP) to this Gateway.
-  3. Configure the **SNAT rule** to enable outbound internet access.
+- **Denodo** is the tool you use to query data — think of it as a smart window into your data
+- **DLI (Data Lake Insight)** is Huawei Cloud's data processing engine — it runs your queries
+- **OBS (Object Storage Service)** is where your actual data files live — like a cloud hard drive
 
----
-
-## 2. Setting Up DLI Resources
-
-Next, prepare the DLI environment where your jobs will run.
-
-1. **Purchase a Resource Pool**
-   - This is the compute environment for your jobs.
-   - *Tip:* For testing, a basic 16 CU range is sufficient to manage costs. Ensure it is in the same Enterprise Project as your VPC.
-
-2. **Purchase a DLI Package**
-   - Select the smallest configuration for initial connectivity testing.
-
-3. **Associate the Queue**
-   - Go to the **Resource Pool** page.
-   - Click **More** > **Associate Queue** and select the queue you purchased.
+**The goal:** Make Denodo and DLI talk to each other so you can query your data from one place.
 
 ---
 
-## 3. VPC Peering & Authorization
+## Before You Start
 
-This step links the DLI infrastructure to your specific VPC.
+> ⚠️ **Important — Read This First!**
+> 
+> Make sure you have permission to create an **Agency in IAM** (Identity and Access Management). If you don't have this, coordinate with your Master Account administrator **before** starting — skipping this will waste a lot of time later!
 
-### Step A: Authorize Agency
+**What you'll need:**
+- A Huawei Cloud account with DLI and OBS enabled
+- A running Denodo instance with a public IP address
+- Admin or sufficient IAM permissions
+- Basic familiarity with cloud consoles (no coding required until Step 8)
 
-Before connecting, ensure the necessary permissions are active. Navigate to DLI settings and verify/update the three Agency settings to ensure seamless integration.
+---
+
+## Step 1 — Networking Setup
+
+### 🤔 Why Do We Need This?
+
+By default, DLI lives in its own isolated network — it can't reach the outside internet (or your Denodo instance) on its own. We need to build a "bridge" using a **NAT Gateway**.
+
+Think of it like this: DLI is in a room with no windows. The NAT Gateway is the window we're adding so it can see outside.
+
+### What To Do
+
+**A. Create an Enterprise Project**
+
+An Enterprise Project is just a folder to keep all your related resources organized and easy to track. Create one first before anything else.
+
+**B. Create a VPC (Virtual Private Cloud)**
+
+A VPC is your own private network on Huawei Cloud. Create a standard VPC with any name you like.
+
+**C. Set Up a NAT Gateway**
+
+A NAT Gateway is what lets DLI access the internet. Here's how:
+
+1. Purchase a **NAT Gateway** inside your VPC
+2. Bind an **EIP (Elastic IP)** to the gateway — this is the public IP address DLI will use to reach the internet
+3. Add an **SNAT Rule** to enable outbound internet traffic
+
+> 💡 **Plain English:** EIP = a fixed public address. SNAT Rule = permission slip that says "this network is allowed to go to the internet".
+
+---
+
+## Step 2 — Setting Up DLI Resources
+
+Now we set up the actual compute environment where your jobs will run.
+
+### A. Purchase a Resource Pool
+
+A Resource Pool is the computing power DLI uses to run your jobs.
+
+- For testing: **16 CU** is enough and keeps costs low
+- Make sure it's in the **same Enterprise Project** as your VPC from Step 1
+
+### B. Purchase a DLI Queue
+
+A Queue is a dedicated lane for running your queries. Start with the **smallest configuration** for initial testing.
+
+### C. Associate the Queue to the Resource Pool
+
+1. Go to the **Resource Pool** page
+2. Click **More** → **Associate Queue**
+3. Select the queue you just purchased
+
+> 💡 **Why:** The Resource Pool provides the horsepower. The Queue is what you'll actually submit jobs to. They need to be linked together.
+
+---
+
+## Step 3 — VPC Peering & Authorization
+
+This step connects DLI's network to your VPC so they can communicate.
+
+### A. Set Up Agency Authorization
+
+An **Agency** is basically a permission slip that lets one Huawei service act on behalf of another.
+
+1. Go to **DLI Settings**
+2. Find the **Agency** section
+3. Make sure all three agency settings are authorized
 
 ![Agency Settings](https://github.com/user-attachments/assets/9a954bc3-1f86-45e8-98c8-2ed0c7b4aada)
 
-### Step B: Set Up VPC Peering
+### B. Set Up VPC Peering
 
-1. Click on **Datasource Connection** this is where you perform VPC peering from DLI to your VPC.
-2. Input the information according to your **NAT Gateway VPC**.
-3. Ensure you select your **Resource Pool** in the form.
+VPC Peering creates a direct private connection between DLI's network and your VPC.
+
+1. Go to **Datasource Connection** in DLI
+2. Click to create a new connection
+3. Fill in your **NAT Gateway VPC details**
+4. Make sure you select your **Resource Pool** in the form
 
 ![VPC Peering Setup](https://github.com/user-attachments/assets/b7fb7e68-a528-4f63-88da-9d1c7eef3bd5)
 
 ---
 
-## 4. Final Routing (The "Tricky" Part)
-For official documentation from Huawei Cloud You can see here
-🍀https://support.huaweicloud.com/eu/bestpractice-dli/dli_05_0061.html
+## Step 4 — Final Routing (The Tricky Part)
 
-Even with peering active, the queue needs specific instructions to reach the internet via the NAT Gateway.
+> 📖 **Official Huawei Docs for this step:**  
+> https://support.huaweicloud.com/eu/bestpractice-dli/dli_05_0061.html
 
-### Configure NAT Gateway SNAT
+Even with VPC Peering done, the DLI Queue doesn't automatically know how to reach the internet. We need to give it specific directions — like a GPS address.
 
-Return to your **NAT Gateway** settings and add a new **SNAT Rule** specifically for the DLI Queue:
+### A. Add a Second SNAT Rule for the DLI Queue
 
-| Field | Value |
+Go back to your **NAT Gateway** and add a **new SNAT Rule** specifically for your DLI Queue subnet:
+
+| Field | What to Put |
 |---|---|
 | **Scenario** | Direct Connect / Cloud Connect |
-| **Subnet** | The specific subnet where your DLI queue is located |
+| **Subnet** | The subnet where your DLI queue lives |
 | **EIP** | The EIP bound to your NAT Gateway |
 
 ![SNAT Configuration](https://github.com/user-attachments/assets/ea7339ba-6433-41fe-b536-a23e24e37420)
 
-### Add a Custom Route
+### B. Add a Custom Route
 
-Go back to the **Data Lake Insight Dashboard** after configuring the SNAT rule:
+This tells the DLI Queue exactly where Denodo lives.
 
-1. Click on **Manage Route**.
-2. Click **Add a Custom Route** and enter the **Public IP address of your Denodo instance**. This tells the queue exactly where to send traffic.
+1. Go back to **DLI Dashboard**
+2. Click **Manage Route**
+3. Click **Add Custom Route**
+4. Enter the **Public IP address of your Denodo instance**
+
+> 💡 **Why:** Without this route, DLI knows it can access the internet, but doesn't know where Denodo is specifically. This step is like entering a destination into GPS.
 
 ---
 
-## 5. Verify Connectivity
+## Step 5 — Verify Connectivity
 
-Test if the bridge is working:
+Let's make sure everything is working before moving on!
 
-1. In the DLI Queue list, click **More** > **Test Address Connectivity**.
-2. Enter the **Public IP address** of your Denodo instance.
-3. If the connection is successful, you are ready to go! 🎉
+1. In the DLI Queue list, click **More** → **Test Address Connectivity**
+2. Enter the **Public IP address of your Denodo instance**
+3. ✅ If it says connected — you're ready to go!
 
 ![Connectivity Test](https://github.com/user-attachments/assets/bea764fd-cec1-4273-9ebf-ea8647f2c1d2)
 
-**Congrats! you've passed the networking stage! Now let's move on to the Spark job setup. 😃**
+> 🎉 **Congrats! You've completed the networking stage! The hard part is done.**
 
 ---
 
-## 6. Create an OBS Bucket
+## Step 6 — Create an OBS Bucket
 
-Create an OBS bucket to store your Spark job script, Denodo JDBC driver, and logs. The **Standard** storage type is recommended if you plan to access this bucket frequently.
+OBS (Object Storage Service) is Huawei Cloud's file storage — think of it like Google Drive but for cloud applications.
+
+We need an OBS bucket to store:
+- Your Spark job script (the code that runs your query)
+- The Denodo JDBC driver (a file that lets DLI talk to Denodo)
+- Job logs
+
+**How to create it:**
+1. Go to the OBS console
+2. Click **Create Bucket**
+3. Choose **Standard** storage type (recommended if you'll access it frequently)
+4. Note down the bucket path — you'll need it in later steps
 
 ![OBS Bucket](https://github.com/user-attachments/assets/349188f4-868b-47b0-9b27-54f141e3bd33)
 
-> **Note:** Make sure you remember the path where you store your driver and Spark job files.
+---
+
+## Step 7 — Upload the Denodo JDBC Driver
+
+### 🤔 What Is a JDBC Driver?
+
+A **JDBC Driver** is a small file (`.jar`) that acts as a translator between two systems. Without it, DLI wouldn't know how to speak Denodo's language.
+
+### How to Upload It
+
+**1. Download the driver**
+
+Go to the Denodo community portal and download the JDBC driver:
+👉 https://community.denodo.com/drivers/jdbc/9
+
+**2. Upload to OBS**
+
+Upload the `.jar` file to your OBS bucket (keep it in a clearly named folder like `/drivers/`).
+
+![Driver in OBS](https://github.com/user-attachments/assets/933f219b-ac54-42ef-80d0-066842da53ee)
+
+**3. Register it in DLI**
+
+1. Go to **DLI Dashboard** → **Package Management**
+2. Click **Create Package**
+3. Set the path to your `.jar` file in OBS
+4. Set **Type** to `JAR`
+5. For **Group**, select **Do not use**
+
+![Package Management](https://github.com/user-attachments/assets/024a4873-8ce9-4e03-baaa-9812b9c5393c)
 
 ---
 
-## 7. Upload the Denodo JDBC Driver
+## Step 8 — Write a PySpark Job to Query Denodo
 
-1. Download the Denodo JDBC driver from the community portal:
-   👉 https://community.denodo.com/drivers/jdbc/9
-   The file will be a `.jar` file.
+### 🤔 What Is PySpark?
 
-2. Upload the `.jar` file to your OBS bucket.
+**PySpark** is Python code that runs on Apache Spark — a powerful data processing engine. DLI uses Spark under the hood, so we write a small Python script to tell it what to do.
 
-   ![Driver in OBS](https://github.com/user-attachments/assets/933f219b-ac54-42ef-80d0-066842da53ee)
+### The Script
 
-3. Head back to the **DLI Dashboard** and go to **Package Management**.
-   - Specify the path to the `.jar` file in OBS.
-   - Set the type to **JAR**.
-   - For the group, select **Do not use** — it's not required.
-
-   ![Package Management](https://github.com/user-attachments/assets/024a4873-8ce9-4e03-baaa-9812b9c5393c)
-
-Your Denodo JDBC driver is now uploaded and registered in DLI!
-
----
-
-## 8. Write a PySpark Job to Query Denodo
-
-Create a PySpark script to fetch data from Denodo. Here's an example script:
+Create a new file called `query_denodo.py` with this content:
 
 ```python
 from pyspark.sql import SparkSession
 
+# Start a Spark session (the entry point for all Spark jobs)
 spark = SparkSession.builder \
-    .appName("denodo_test") \
+    .appName("denodo_query") \
     .getOrCreate()
 
+# Connect to Denodo and read a table
 df = spark.read \
     .format("jdbc") \
-    .option("url", "jdbc:denodo://xxx.xxx.xxx.xxx:9999/admin") \
-    .option("dbtable", "fruit") \  # Replace with your table name
-    .option("user", "****") \
-    .option("password", "****") \
+    .option("url", "jdbc:denodo://YOUR_DENODO_IP:9999/admin") \  # ← Replace with your Denodo IP
+    .option("dbtable", "your_table_name") \                       # ← Replace with your table name
+    .option("user", "your_username") \                            # ← Replace with your username
+    .option("password", "your_password") \                        # ← Replace with your password
     .option("driver", "com.denodo.vdp.jdbc.Driver") \
     .load()
 
+# Print the result
 df.show()
 
 spark.stop()
 ```
 
-> **Note:** You will need a separate script for each table you want to ingest.
+> ⚠️ **Note:** You'll need one script per table you want to query. Just copy this template and change the `dbtable` value each time.
 
-Once your script is ready:
-- Save it as a `.py` file.
-- Upload it to your OBS bucket (a dedicated folder for jobs is recommended for easier management).
+**Upload the script to OBS** once it's ready (a dedicated `/jobs/` folder is recommended).
 
 ---
 
-## 9. Create an IAM Agency to Access OBS
+## Step 9 — Create an IAM Agency to Access OBS
 
-Your DLI queue needs explicit permission to access OBS. This is done by creating an **IAM Agency**.
+### 🤔 Why Do We Need This?
 
-For official reference, see:
-👉 https://support.huaweicloud.com/intl/en-us/qs-dli/dli_13_0003.html
+DLI needs explicit permission to read files from your OBS bucket. Without this, the Spark job will fail because it can't access the driver file or the script.
 
-### Step 1: Get Your AK/SK
+### Step A — Get Your AK/SK Credentials
 
-To access OBS from DLI, you will need your account's **Access Key (AK)** and **Secret Key (SK)**.
+**AK (Access Key)** and **SK (Secret Key)** are like a username and password for Huawei Cloud APIs. You'll need these to authenticate.
 
-### Step 2: Purchase DEW and Store Your AK/SK
+Find them in: **My Account** → **Access Keys**
 
-1. Log in to the **DEW management console**.
-2. In the navigation pane, choose **Cloud Secret Management Service** > **Secrets**.
-3. Click **Create Secret** and configure the following key-value pairs:
-   - **Line 1 key:** Your Access Key ID (AK)
-   - **Line 2 key:** Your Secret Access Key (SK)
+### Step B — Store Your AK/SK Securely in DEW
 
-   ![DEW Secret](https://github.com/user-attachments/assets/2704005e-3fdd-4bc4-aa1d-9e3856e30bc3)
+**DEW (Data Encryption Workshop)** is Huawei's secure secret storage — like a vault for sensitive credentials.
 
-### Step 3: Create the IAM Agency
+1. Go to the **DEW Console** → **Cloud Secret Management Service** → **Secrets**
+2. Click **Create Secret**
+3. Add two key-value pairs:
+   - Key 1: Your Access Key (AK)
+   - Key 2: Your Secret Access Key (SK)
 
-1. In the IAM console, go to **Agencies** and click **Create Agency**.
-2. Fill in the following parameters:
+![DEW Secret](https://github.com/user-attachments/assets/2704005e-3fdd-4bc4-aa1d-9e3856e30bc3)
 
-   | Field | Value |
-   |---|---|
-   | **Agency Name** | e.g., `dli_dew_agency_access` |
-   | **Agency Type** | Cloud service |
-   | **Cloud Service** | Data Lake Insight (DLI) |
-   | **Validity Period** | Unlimited |
-   | **Description** | Agency with OBS OperateAccess permissions *(optional)* |
+### Step C — Create the IAM Agency
 
-3. Click **Next**, then open the agency and go to the **Permissions** tab.
-4. Click **Authorize** > **Create Policy** and configure the following:
+1. Go to **IAM Console** → **Agencies** → **Create Agency**
+2. Fill in:
 
-   - **Policy Name:** e.g., `dli-dew-agency`
-   - **Format:** JSON
-   - **Policy Content:**
+| Field | Value |
+|---|---|
+| **Agency Name** | `dli_dew_agency_access` (or any name you like) |
+| **Agency Type** | Cloud service |
+| **Cloud Service** | Data Lake Insight (DLI) |
+| **Validity Period** | Unlimited |
 
-   ```json
-   {
-       "Version": "1.1",
-       "Statement": [
-           {
-               "Effect": "Allow",
-               "Action": [
-                   "csms:secretVersion:get",
-                   "csms:secretVersion:list",
-                   "kms:dek:decrypt"
-               ]
-           }
-       ]
-   }
-   ```
+3. Click **Next** → go to the **Permissions** tab → click **Authorize** → **Create Policy**
+4. Set **Format** to JSON and paste this:
 
-5. Click **Next**, select the custom policy you just created, then click **Next** again.
-6. On the **Select Scope** page, search for **OBS** and check all the highlighted permissions shown below:
+```json
+{
+    "Version": "1.1",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "csms:secretVersion:get",
+                "csms:secretVersion:list",
+                "kms:dek:decrypt"
+            ]
+        }
+    ]
+}
+```
 
-   ![OBS Permissions 1](https://github.com/user-attachments/assets/460501fc-2852-41b0-89bd-5919640c2823)
-   ![OBS Permissions 2](https://github.com/user-attachments/assets/95891811-5dec-4240-b4cf-aea5a61f1576)
+5. Click **Next** → On the **Select Scope** page, search for **OBS** and check all the highlighted permissions
 
-7. Click **OK**.
+![OBS Permissions 1](https://github.com/user-attachments/assets/460501fc-2852-41b0-89bd-5919640c2823)
+![OBS Permissions 2](https://github.com/user-attachments/assets/95891811-5dec-4240-b4cf-aea5a61f1576)
 
-> **Note:** It may take **15–30 minutes** for the authorization to take effect.
+6. Click **OK**
 
-Your DLI queue now has access to OBS! 🥳
+> ⏳ **Note:** It may take **15–30 minutes** for the permissions to take effect. Grab a coffee! ☕
 
 ---
 
-## 10. Submit the Spark Job
+## Step 10 — Submit the Spark Job
 
-You're almost there! Now let's submit the Spark job to pull data from Denodo.
+Time to put it all together and actually run the job!
 
-1. On the DLI console, go to **Job Management** > **Spark Jobs** and click **Create Job**.
-2. Configure the job with the following parameters:
+1. Go to **DLI Console** → **Job Management** → **Spark Jobs** → **Create Job**
+2. Fill in the job configuration:
 
-   | Field | Value |
-   |---|---|
-   | **Queue** | The queue you created |
-   | **Spark Version** | `3.3.1` *(required for DEW agent support)* |
-   | **Application** | Your PySpark `.py` script from OBS |
-   | **Agency** | The IAM agency you created |
-   | **Jar Dependencies** | The Denodo JDBC `.jar` file |
+| Field | Value |
+|---|---|
+| **Queue** | The queue you created |
+| **Spark Version** | `3.3.1` (required for DEW agent support) |
+| **Application** | Your `.py` script path in OBS |
+| **Agency** | The IAM agency you created in Step 9 |
+| **Jar Dependencies** | Your Denodo JDBC `.jar` file path in OBS |
 
-Note: For some reason when i re-tested with the fruits table, the driver only works if you put it here. **Do NOT use the drop down**. Im not sure why there's an error if you use that method.
+> ⚠️ **Important Note:** When adding the Jar dependency, **type the OBS path manually — do NOT use the dropdown**. There's a known issue where the dropdown causes an error even though it looks like it should work.
 
-   <img width="606" height="472" alt="image" src="https://github.com/user-attachments/assets/afdcafc6-bd13-49e4-9762-955981150b7c" />
+![Job Configuration](https://github.com/user-attachments/assets/afdcafc6-bd13-49e4-9762-955981150b7c)
 
+3. Click **Execute** in the top-right corner
+4. Accept the privacy agreement and click **OK**
 
-4. Click **Execute** in the upper right corner, accept the privacy agreement, and click **OK** to submit the job.
+---
+
+## Step 11 — See the Result! 🎉
+
+Once the job finishes:
+
+1. Click on your Spark job
+2. Click the **More** dropdown
+3. Select **Driver Log**
+4. Scroll down — you should see your table data printed out!
+
+![Result](https://github.com/user-attachments/assets/a916e50a-1b3b-464c-af4b-fc60a89de79c)
+
+> 🥳 **You did it! Your Denodo data is now flowing through DLI!**
 
 ---
 
-## 11. See the Result!
+## Step 12 — Connecting a DLI Table Back into Denodo
 
-Once the job completes successfully, your Denodo data will be available in DLI. Check the job logs to verify the output. 🎉
-You can check this by clicking on your spark job > More drop down > select driver log then scroll down if you can see your result. 
-
-<img width="463" height="176" alt="image" src="https://github.com/user-attachments/assets/a916e50a-1b3b-464c-af4b-fc60a89de79c" />
-
-Yay! we got the fruits table!
-
-## 12. Connecting a DLI Table in Denodo
-
-Once you have your table in Data Lake Insight (DLI), you may want to bring it back into Denodo for further use. This tutorial walks you through exactly how to do that!
-
----
+Now let's go the other direction — taking a DLI table and making it queryable from Denodo.
 
 ### A. Get Your AK/SK Credentials
 
-Before anything else, you'll need to retrieve your **Access Key (AK)** and **Secret Key (SK)** from your Huawei Cloud account. These credentials allow Denodo to authenticate and access your DLI table.
+You'll need your **Access Key (AK)** and **Secret Key (SK)** again (same as Step 9A).
 
----
+### B. Construct Your DLI JDBC Connection String
 
-### B. Write Down Your DLI JDBC Endpoint
+Denodo connects to DLI via JDBC. Use this template to build your connection URL:
 
-Denodo connects to DLI via a **JDBC connection**. Use the template below to construct your endpoint:
 ```
-jdbc:dli://dli.{huawei-region-endpoint}/{project-id}?regionname={region-code};authenticationmode=aksk;databasename={databasename};queuename={queuename}
-```
-
-For Example 
-```
-jdbc:dli://dli.ap-southeast-4.myhuaweicloud.com/xxx?regionname=ap-southeast-4;authenticationmode=aksk;databasename=dbname;queuename=queue_name
+jdbc:dli://{dli-endpoint}/{project-id}?regionname={region};authenticationmode=aksk;databasename={database};queuename={queue}
 ```
 
-> 💡 **Tip:** Not sure which DLI endpoint to use? Check the full list of Huawei Cloud endpoints here:  
-> [https://console-intl.huaweicloud.com/apiexplorer/#/endpoint](https://console-intl.huaweicloud.com/apiexplorer/#/endpoint)
+**Real example:**
+```
+jdbc:dli://dli.ap-southeast-4.myhuaweicloud.com/abc123?regionname=ap-southeast-4;authenticationmode=aksk;databasename=dummy_data;queuename=queue_spark
+```
 
----
+> 💡 **Not sure which endpoint to use?** Check the full list here:  
+> https://console-intl.huaweicloud.com/apiexplorer/#/endpoint
 
-### C. Install the Custom DLI JDBC Driver in Denodo
+### C. Install the DLI JDBC Driver in Denodo
 
-Once your endpoint is ready, you need to install the DLI JDBC driver into Denodo.
+**1. Import the driver**
 
-**1. Download the driver**  
-Download the DLI JDBC driver file from the link provided *(still trying to make the download link lol)*.
-
-**2. Import the driver into Denodo**  
-Follow these steps inside Denodo:
-
+Inside Denodo Design Studio:
 1. Go to **File** → **Extension Management**
-2. Click on **Library**
-3. Click the **Import** button
-4. Set the **Resource Type** to `JDBC_other`
-5. Give it a name of your choice
-6. Click **OK** and return to the **Connection** tab
+2. Click **Library** → **Import**
+3. Set **Resource Type** to `JDBC_other`
+4. Give it a name and click **OK**
 
-**3. Configure the driver class**  
-Navigate to **Configuration** → **Advanced** → set the **Driver Class** as shown in the screenshot below.
+**2. Configure the driver class**
+
+Go to **Configuration** → **Advanced** and set the **Driver Class** as shown:
 
 ![Denodo Driver Class Configuration](https://github.com/user-attachments/assets/5a544a6f-f59e-4c5f-ac20-dd1c352adefe)
 
-If you want to see your table contents you need to go to your create base view and pick your database
-you are then able to pick your table and select it to make a base view out of it! thanks for reading this far!
+**3. Create a Base View**
+
+1. Go to your new DLI data source in Denodo
+2. Click **Create Base View**
+3. Select your database and table
+4. Click to create the view — your DLI table is now queryable from Denodo! 🎉
+
 ---
 
-Once everything is configured, test your connection to verify that Denodo can successfully reach your DLI table. Good luck! 
+## Limitations We Discovered
 
+During this integration, we ran into some important limitations worth knowing upfront:
 
-**I hope that this guide can save you some time 😄, if you have any questions you can always email me at : regina.diva333@gmail.com**
+### ❌ You Cannot UPDATE Data via Denodo VQL → DLI
+
+This is a **DLI platform limitation**, not a Denodo issue. Here's why:
+
+| Format | Supports UPDATE? | Reason |
+|---|---|---|
+| Parquet | ❌ | Immutable file format |
+| CSV | ❌ | Immutable file format |
+| ORC | ❌ | ACID not enabled by DLI |
+| ORC + `transactional=true` | ❌ | DLI's `luxorfs` can't manage transactions |
+| JSON | ❌ | Immutable file format |
+| Avro | ❌ | Immutable file format |
+| Hudi / Delta / Paimon | ❌ | Not supported by DLI at all |
+
+**The workaround:** Use `INSERT OVERWRITE` directly in the DLI SQL Editor to rewrite data with your changes applied.
+
+```sql
+-- Example: "Update" Nasi Goreng's price to 40000
+INSERT OVERWRITE TABLE dummy_data.food
+SELECT
+    id,
+    name,
+    category,
+    CASE WHEN id = 1 THEN 40000.0 ELSE price END AS price,
+    city
+FROM dummy_data.food;
+```
+
+### ❌ Cannot Save Directly to DLI Hive Table from Spark JAR Jobs
+
+DLI Spark JAR jobs cannot connect to the Hive metastore without explicit activation by Huawei. You'll need to submit a support ticket to whitelist this feature.
+
+**Workaround:** Save processed data back to OBS as Parquet instead.
+
+---
+
+## Quick Reference Card
+
+| Task | Where to Do It | Works? |
+|---|---|---|
+| Query data | Denodo VQL Shell | ✅ |
+| Read DLI tables | Denodo VQL Shell | ✅ |
+| INSERT new data | DLI SQL Editor | ✅ |
+| UPDATE existing data | DLI SQL Editor (`INSERT OVERWRITE`) | ✅ workaround |
+| UPDATE via Denodo VQL | Denodo VQL Shell | ❌ DLI limitation |
+
+---
+
+*Last updated: April 2026*
+
+*Questions? Reach out: regina.diva333@gmail.com* 😄
