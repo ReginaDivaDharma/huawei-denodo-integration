@@ -25,7 +25,7 @@ Two integration approaches were explored:
 | Method | Status | Guide |
 |---|---|---|
 | Data Lake Insight (DLI) | ✅ Working | [View Guide](dli-integration.md) |
-| Data Warehouse Service (DWS) | ⚠️ See notes | [View Guide](dws-integration.md) |
+| Data Warehouse Service (DWS) | ⚠️ See notes | DWS does not have a JDBC driver |
 
 The general flow is:
 1. [Prepare your data](data-preparation.md)
